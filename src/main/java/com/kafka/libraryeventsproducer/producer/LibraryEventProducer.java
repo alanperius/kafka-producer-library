@@ -30,12 +30,7 @@ public class LibraryEventProducer {
     ObjectMapper objectMapper;
 
     public void sendLibraryEvent(LibraryEvent libraryEvent) throws JsonProcessingException {
-        for (int j = 0; j < 10000; j++) {
-            for (int i = 1; i <= 10; i++) {
-                libraryEvent.getBook().setBookName("Grêmio " + i);
-                libraryEvent.setLibraryEventId(j);
                 String value = objectMapper.writeValueAsString(libraryEvent);
-
                 ListenableFuture<SendResult<Integer, String>> listenableFuture = kafkaTemplate
                         .send(
                                 library
@@ -55,8 +50,6 @@ public class LibraryEventProducer {
                         handleSuccess(libraryEvent.getLibraryEventId(), value, result);
                     }
                 });
-            }
-        }
     }
 
     private void handleError(Integer libraryEventId, String value, Throwable ex) {
@@ -71,9 +64,7 @@ public class LibraryEventProducer {
 
 
     private void handleSuccess(Integer key, String value, SendResult<Integer, String> result) {
-        //log.info("Message sent successFully for the key: {} and the value is: {}, partition is {}", key, value, result.getRecordMetadata().partition());
-        log.info("Message number:: {} sent!", result.getProducerRecord().key());
-
+        log.info("Message sent successFully for the key: {} and the value is: {}, partition is {}", key, value, result.getRecordMetadata().partition());
     }
 
 
@@ -95,8 +86,6 @@ public class LibraryEventProducer {
     }
 
     public void sendLibrarySync_With_Header(LibraryEvent libraryEvent) throws JsonProcessingException, ExecutionException, InterruptedException {
-        for (int i = 0; i < 10_000_000; i++) {
-            libraryEvent.setLibraryEventId(i);
             Integer key = libraryEvent.getLibraryEventId();
             String value = objectMapper.writeValueAsString(libraryEvent);
             ProducerRecord<Integer, String> producerRecord = buildProducerRecord(key, value, library);
@@ -114,13 +103,12 @@ public class LibraryEventProducer {
                     handleSuccess(libraryEvent.getLibraryEventId(), value, result);
                 }
             });
-        }
 
     }
 
     private ProducerRecord<Integer, String> buildProducerRecord(Integer key, String value, String library) {
         List<Header> headers = List.of(new RecordHeader("idTest", "save".getBytes()));
-        return new ProducerRecord<>(library, null, key, value, null);
+        return new ProducerRecord<>(library, null, key, value, headers);
     }
 
 
