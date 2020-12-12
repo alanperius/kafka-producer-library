@@ -9,7 +9,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.support.SendResult;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -28,8 +27,6 @@ public class LibraryEventsController {
     public ResponseEntity<LibraryEvent> createLibrary(@RequestBody LibraryEvent libraryEvent) throws JsonProcessingException, ExecutionException, InterruptedException {
         libraryEvent.setLibraryEventType(LibraryEventType.NEW);
         log.info("before");
-//        libraryEventProducer.sendLibraryEvent(libraryEvent);
-//        SendResult<Integer, String> sendResult = libraryEventProducer.sendLibrarySync(libraryEvent);
 
         libraryEventProducer.sendLibrarySync_With_Header(libraryEvent);
         log.info("after ");
