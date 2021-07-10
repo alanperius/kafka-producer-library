@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.Calendar;
 import java.util.concurrent.ExecutionException;
 
 @RestController
@@ -27,12 +28,31 @@ public class LibraryEventsController {
     public ResponseEntity<LibraryEvent> createLibrary(@RequestBody LibraryEvent libraryEvent) throws JsonProcessingException, ExecutionException, InterruptedException {
         libraryEvent.setLibraryEventType(LibraryEventType.NEW);
         log.info("before");
-
+        long init = Calendar.getInstance().getTimeInMillis();
         libraryEventProducer.sendLibrarySync_With_Header(libraryEvent);
+        long end = Calendar.getInstance().getTimeInMillis();
+
         log.info("after ");
         return ResponseEntity.status(HttpStatus.CREATED).body(libraryEvent);
     }
 
+    @PostMapping("v1/startLibraryEvent")
+    public ResponseEntity<LibraryEvent> createLibraries(@RequestBody LibraryEvent libraryEvent) throws JsonProcessingException, ExecutionException, InterruptedException {
+        libraryEvent.setLibraryEventType(LibraryEventType.NEW);
+        log.info("before");
+
+        long init = Calendar.getInstance().getTimeInMillis();
+
+        libraryEventProducer.sendLibrarySync_With_Header(libraryEvent);
+
+        long end = Calendar.getInstance().getTimeInMillis();
+
+        log.info("Time to Complete: {}", end-init);
+
+
+        log.info("after ");
+        return ResponseEntity.status(HttpStatus.CREATED).body(libraryEvent);
+    }
 
     @PutMapping("v1/libraryEvent")
     public ResponseEntity<?> updateLibrary(@RequestBody LibraryEvent libraryEvent) throws JsonProcessingException {

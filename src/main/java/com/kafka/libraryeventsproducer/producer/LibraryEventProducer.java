@@ -3,6 +3,7 @@ package com.kafka.libraryeventsproducer.producer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.kafka.libraryeventsproducer.config.Topics;
 import com.kafka.libraryeventsproducer.domain.LibraryEvent;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -18,10 +19,12 @@ import org.springframework.util.concurrent.ListenableFutureCallback;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
 
+import static com.kafka.libraryeventsproducer.config.Topics.*;
+
 @Component
 @Slf4j
 public class LibraryEventProducer {
-    String library = "library";
+    String library = LIBRARY;
 
     @Autowired
     private KafkaTemplate<Integer, String> kafkaTemplate;
@@ -72,8 +75,15 @@ public class LibraryEventProducer {
         String value = objectMapper.writeValueAsString(libraryEvent);
         Integer key = libraryEvent.getLibraryEventId();
         SendResult<Integer, String> sendResult = null;
+        sendResult = testSendMessage(value, key);
+
+        return sendResult;
+    }
+
+    private SendResult<Integer, String> testSendMessage(String value, Integer key) throws InterruptedException, ExecutionException {
+        SendResult<Integer, String> sendResult;
         try {
-            sendResult = kafkaTemplate.send("library", key, value).get();
+            sendResult = kafkaTemplate.send(library, key, value).get();
         } catch (InterruptedException | ExecutionException e) {
             log.error("InterruptedException/ExecutionException Error sending the message: {}", e.getMessage());
             throw e;
@@ -81,29 +91,41 @@ public class LibraryEventProducer {
             log.error("Error on sendLibrarySync: {}", e.getMessage());
             throw e;
         }
-
         return sendResult;
     }
 
     public void sendLibrarySync_With_Header(LibraryEvent libraryEvent) throws JsonProcessingException, ExecutionException, InterruptedException {
-            Integer key = libraryEvent.getLibraryEventId();
+        for(int i = 0; i < 10_000; i++){
+            libraryEvent.setLibraryEventId(i);
+            libraryEvent.getBook().setBookId(i);
             String value = objectMapper.writeValueAsString(libraryEvent);
-            ProducerRecord<Integer, String> producerRecord = buildProducerRecord(key, value, library);
+            Integer key = libraryEvent.getLibraryEventId();
+            SendResult<Integer, String> sendResult = testSendMessage(value, key);
+            log.info("Message sent, id:: {} - key::{}", libraryEvent.getLibraryEventId(), key);
+            //sendMessage(libraryEvent);
+        }
+
+    }
+
+    private void sendMessage(LibraryEvent libraryEvent) throws JsonProcessingException {
+        Integer key = libraryEvent.getLibraryEventId();
+        String value = objectMapper.writeValueAsString(libraryEvent);
+        ProducerRecord<Integer, String> producerRecord = buildProducerRecord(key, value, library);
             ListenableFuture<SendResult<Integer, String>> listenableFuture = kafkaTemplate.send(producerRecord);
-            listenableFuture.addCallback(new ListenableFutureCallback<SendResult<Integer, String>>() {
-                @Override
-                public void onFailure(Throwable ex) {
-                    System.out.println("fail");
-                    handleError(libraryEvent.getLibraryEventId(), value, ex);
-                }
+        listenableFuture.addCallback(new ListenableFutureCallback<SendResult<Integer, String>>() {
+            @Override
+            public void onFailure(Throwable ex) {
+                System.out.println("fail");
+                handleError(libraryEvent.getLibraryEventId(), value, ex);
+            }
 
-                @Override
-                public void onSuccess(SendResult<Integer, String> result) {
-//                    System.out.println("Message number:: " + result.getProducerRecord().key());
-                    handleSuccess(libraryEvent.getLibraryEventId(), value, result);
-                }
-            });
-
+            @Override
+            public void onSuccess(SendResult<Integer, String> result) {
+                System.out.println("Message number:: " + result.getProducerRecord().key());
+                System.out.println("Message key:: " + libraryEvent.getLibraryEventId());
+                handleSuccess(libraryEvent.getLibraryEventId(), value, result);
+            }
+        });
     }
 
     private ProducerRecord<Integer, String> buildProducerRecord(Integer key, String value, String library) {
