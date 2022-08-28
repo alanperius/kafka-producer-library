@@ -12,10 +12,16 @@ import static com.kafka.libraryeventsproducer.config.Topics.*;
 public class AutoCreateTopicConfig {
 
     @Bean
-    public NewTopic libraryEvents() {
-        return TopicBuilder.name(LIBRARY)
-                .partitions(120)
-                .replicas(2)//should be less ou equals to cluster numbers
+    public NewTopic topicName1() {
+        return TopicBuilder.name(TOPICNAME)
+                .partitions(20)
+                .build();
+    }
+
+    @Bean
+    public NewTopic topicName2() {
+        return TopicBuilder.name(TOPICNAME2)
+                .partitions(1)
                 .build();
     }
 

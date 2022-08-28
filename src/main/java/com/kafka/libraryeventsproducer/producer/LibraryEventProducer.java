@@ -12,6 +12,7 @@ import org.apache.kafka.common.header.internals.RecordHeader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.kafka.support.SendResult;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.util.concurrent.ListenableFuture;
 import org.springframework.util.concurrent.ListenableFutureCallback;
@@ -24,7 +25,7 @@ import static com.kafka.libraryeventsproducer.config.Topics.*;
 @Component
 @Slf4j
 public class LibraryEventProducer {
-    String library = LIBRARY;
+    String library = TEST_ALAN;
 
     @Autowired
     private KafkaTemplate<Integer, String> kafkaTemplate;
@@ -65,7 +66,6 @@ public class LibraryEventProducer {
 
     }
 
-
     private void handleSuccess(Integer key, String value, SendResult<Integer, String> result) {
         log.info("Message sent successFully for the key: {} and the value is: {}, partition is {}", key, value, result.getRecordMetadata().partition());
     }
@@ -95,16 +95,20 @@ public class LibraryEventProducer {
     }
 
     public void sendLibrarySync_With_Header(LibraryEvent libraryEvent) throws JsonProcessingException, ExecutionException, InterruptedException {
-        for(int i = 0; i < 10_000; i++){
-            libraryEvent.setLibraryEventId(i);
-            libraryEvent.getBook().setBookId(i);
-            String value = objectMapper.writeValueAsString(libraryEvent);
-            Integer key = libraryEvent.getLibraryEventId();
-            SendResult<Integer, String> sendResult = testSendMessage(value, key);
-            log.info("Message sent, id:: {} - key::{}", libraryEvent.getLibraryEventId(), key);
-            //sendMessage(libraryEvent);
+        for(int i = 0; i < 100; i++){
+            send(libraryEvent, i);
         }
 
+    }
+
+    @Async
+    void send(LibraryEvent libraryEvent, int i) throws JsonProcessingException, InterruptedException, ExecutionException {
+        libraryEvent.setLibraryEventId(i);
+        libraryEvent.getBook().setBookId(i);
+        String value = objectMapper.writeValueAsString(libraryEvent);
+        Integer key = libraryEvent.getLibraryEventId();
+        SendResult<Integer, String> sendResult = testSendMessage(value, key);
+        log.info("Message sent, id:: {} - key::{}", libraryEvent.getLibraryEventId(), key);
     }
 
     private void sendMessage(LibraryEvent libraryEvent) throws JsonProcessingException {

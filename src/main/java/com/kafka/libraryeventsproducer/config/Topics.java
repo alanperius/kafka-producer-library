@@ -8,5 +8,7 @@ import static lombok.AccessLevel.*;
 
 @NoArgsConstructor(access = PRIVATE)
 public class Topics {
-    public final static String LIBRARY = "library3";
+    public final static String TOPICNAME = "TOPIC_NAME1";
+    public final static String TOPICNAME2 = "TOPIC_NAME2";
+    public final static String TEST_ALAN = "testTopic7777";
 }
